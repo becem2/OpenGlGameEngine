@@ -11,6 +11,34 @@ CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
 
+# Build output
+x64/
+x86/
+Debug/
+Release/
+LearnOpenGL/x64/
+*.obj
+*.exe
+*.pdb
+*.ilk
+*.idb
+*.tlog
+*.iobj
+*.ipdb
+
+# Visual Studio
+.vs/
+*.vcxproj.user
+*.aps
+*.sdf
+*.opensdf
+*.suo
+*.VC.db
+*.VC.VC.opendb
+
+# Editor/runtime state (regenerated automatically)
+imgui.ini
+
 # CLion
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
