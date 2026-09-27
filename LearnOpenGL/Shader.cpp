@@ -1,6 +1,7 @@
 #include "Shader.h"
+#include <filesystem>
 
-
+namespace fs = std::filesystem;
 
 Shader::Shader(const char* vertexPath, const char* fragmentPath) {
 
@@ -13,23 +14,66 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath) {
 	vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 	fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
-	try {
-		vShaderFile.open(vertexPath);
-		fShaderFile.open(fragmentPath);
-		std::stringstream vShaderStream, fShaderStream;
+	// Try multiple path locations
+	std::vector<std::string> vShaderPaths = {
+		vertexPath,
+		std::string("LearnOpenGL/") + vertexPath,
+		std::string("../LearnOpenGL/") + vertexPath,
+		std::string("../../LearnOpenGL/") + vertexPath,
+	};
 
-		vShaderStream << vShaderFile.rdbuf();
-		fShaderStream << fShaderFile.rdbuf();
+	std::vector<std::string> fShaderPaths = {
+		fragmentPath,
+		std::string("LearnOpenGL/") + fragmentPath,
+		std::string("../LearnOpenGL/") + fragmentPath,
+		std::string("../../LearnOpenGL/") + fragmentPath,
+	};
 
-		vShaderFile.close();
-		fShaderFile.close();
-
-		vertexCode = vShaderStream.str();
-		fragmentCode = fShaderStream.str();
-
+	// Try to find and load the vertex shader
+	bool vShaderFound = false;
+	for (const auto& path : vShaderPaths) {
+		if (fs::exists(path)) {
+			try {
+				vShaderFile.open(path);
+				std::stringstream vShaderStream;
+				vShaderStream << vShaderFile.rdbuf();
+				vShaderFile.close();
+				vertexCode = vShaderStream.str();
+				vShaderFound = true;
+				std::cout << "Loaded vertex shader: " << path << std::endl;
+				break;
+			}
+			catch (std::ifstream::failure& e) {
+				continue;
+			}
+		}
 	}
-	catch (std::ifstream::failure& e) {
-		std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
+
+	// Try to find and load the fragment shader
+	bool fShaderFound = false;
+	for (const auto& path : fShaderPaths) {
+		if (fs::exists(path)) {
+			try {
+				fShaderFile.open(path);
+				std::stringstream fShaderStream;
+				fShaderStream << fShaderFile.rdbuf();
+				fShaderFile.close();
+				fragmentCode = fShaderStream.str();
+				fShaderFound = true;
+				std::cout << "Loaded fragment shader: " << path << std::endl;
+				break;
+			}
+			catch (std::ifstream::failure& e) {
+				continue;
+			}
+		}
+	}
+
+	if (!vShaderFound) {
+		std::cout << "ERROR::SHADER::VERTEX_FILE_NOT_FOUND: " << vertexPath << std::endl;
+	}
+	if (!fShaderFound) {
+		std::cout << "ERROR::SHADER::FRAGMENT_FILE_NOT_FOUND: " << fragmentPath << std::endl;
 	}
 
 	const char* vShaderCode = vertexCode.c_str();
@@ -99,4 +143,5 @@ void Shader::setMat4(const std::string& name, const glm::mat4& value) const {
 void Shader::setVec3(const std::string& name, const glm::vec3& value)const {
 
 	glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(value));
+
 }

@@ -21,9 +21,6 @@
     <ClCompile Include="C:\Users\Becem\Desktop\GLAD\src\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Shader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="stb_image.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -57,6 +54,9 @@
     <ClCompile Include="Model.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="LearnOpenGL.vcxproj.fixed" />
@@ -71,6 +71,12 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="lightingShader.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Ambient.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Ambient.fs">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
