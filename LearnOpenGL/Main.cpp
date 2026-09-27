@@ -31,8 +31,7 @@ Camera* ourCamera = nullptr;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-// lighting
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
 
 // cursor capture state
 enum class CursorMode { Captured, Free };
@@ -160,11 +159,21 @@ int main()
 
     // Variables
     glm::vec3 LightColor = glm::vec3(1, 1, 1);
-
+    glm::vec3 LightPos = glm::vec3(1.2f, 1.0f, 2.0f);
+	glm::vec3 LightDirection = glm::vec3(-0.2f, -1.0f, -0.3f);
     glm::vec3 MaterialColor = glm::vec3(153.0f/256, 53.0f/256, 53.0f/256);
     float AmbientStrength = 0.2f; 
 	float SpecularStrength = 5.0f; 
-    float Shininess = 32.0f; 
+    int Shininess = 32; 
+	bool isAmbientOn = true;
+	bool isDiffuseOn = true;
+	bool isSpecularOn = true;
+	int LightType = 0; // 0 = Directional, 1 = Point, 2 = Flash
+	float LightConstant = 1.0f;
+	float LightLinear = 0.09f;
+	float LightQuadratic = 0.032f;
+	float CutOff = glm::cos(glm::radians(12.5f));
+	float OuterCutOff = glm::cos(glm::radians(17.5f));
 
 
 
@@ -251,20 +260,32 @@ int main()
 
         // be sure to activate shader when setting uniforms/drawing objects
         objectShader.use();
-        objectShader.setVec3("light.position", lightPos);
         objectShader.setVec3("viewPos", ourCamera->getPosition());
-
-		
 
         // light properties
         objectShader.setVec3("light.ambient", LightAmbient);
         objectShader.setVec3("light.color", LightColor);
-        objectShader.setVec3("light.position", lightPos);
+        objectShader.setVec3("light.position", LightPos);
+        objectShader.setVec3("light.direction", LightDirection);
+		objectShader.setFloat("light.constant", LightConstant);
+		objectShader.setFloat("light.linear", LightLinear);
+		objectShader.setFloat("light.quadratic", LightQuadratic);
+		objectShader.setFloat("light.cutoff", CutOff);
+        objectShader.setFloat("light.outerCutoff", OuterCutOff);
         
         // material properties
         objectShader.setVec3("material.ambient", MaterialColor);
         objectShader.setVec3("material.color", MaterialColor);
         objectShader.setFloat("material.specularStrength", SpecularStrength);
+        objectShader.setInt("material.shininess", Shininess);
+
+
+
+        // Light Activation / Type
+		objectShader.setBool("lightActivation.ambient", isAmbientOn);
+		objectShader.setBool("lightActivation.diffuse", isDiffuseOn);
+		objectShader.setBool("lightActivation.specular", isSpecularOn);
+		objectShader.setInt("lightType", LightType);
 
 
 		// viewPosition properties
@@ -306,7 +327,7 @@ int main()
         lightingShader.setMat4("projection", projection);
         ourCamera->Use(lightingShader);
         glm::mat4 lampModel = glm::mat4(1.0f);
-        lampModel = glm::translate(lampModel, lightPos);
+        lampModel = glm::translate(lampModel, LightPos);
         lampModel = glm::scale(lampModel, glm::vec3(0.2f)); // a smaller cube
         lightingShader.setMat4("model", lampModel);
 
@@ -320,7 +341,56 @@ int main()
         ImGui::ColorEdit3("Material Color", glm::value_ptr(MaterialColor));
         ImGui::SliderFloat("Ambient Strength", &AmbientStrength, 0.1f, 1.0f);
         ImGui::SliderFloat("Specular Strength", &SpecularStrength, 0.1f, 10.0f);
-        ImGui::DragFloat3("Light Position", glm::value_ptr(lightPos), 0.1f);
+        ImGui::Text("Shininess : ");
+        ImGui::RadioButton("2", &Shininess, 2);   ImGui::SameLine();
+        ImGui::RadioButton("4", &Shininess, 4);   ImGui::SameLine();
+        ImGui::RadioButton("8", &Shininess, 8);   ImGui::SameLine();
+        ImGui::RadioButton("16", &Shininess, 16);
+        ImGui::RadioButton("32", &Shininess, 32);  ImGui::SameLine();
+        ImGui::RadioButton("64", &Shininess, 64);  ImGui::SameLine();
+        ImGui::RadioButton("128", &Shininess, 128); ImGui::SameLine();
+        ImGui::RadioButton("256", &Shininess, 256);
+        ImGui::Checkbox("Ambient", &isAmbientOn);
+        ImGui::Checkbox("Diffuse", &isDiffuseOn);
+        ImGui::Checkbox("Specular", &isSpecularOn);
+
+        ImGui::Separator();
+        ImGui::RadioButton("Directional", &LightType, 0);
+        ImGui::SameLine();
+        ImGui::RadioButton("Point", &LightType, 1);
+        ImGui::SameLine();
+        ImGui::RadioButton("Flash", &LightType, 2);
+        ImGui::Separator();
+
+        if (LightType == 0)
+        {
+            // Directional-only controls
+            ImGui::Text("Directional Light Settings");
+            ImGui::DragFloat3("Light Direction", glm::value_ptr(LightDirection), 0.05f);
+        }
+        else if (LightType == 1)
+        {
+            // Point-only controls
+            ImGui::Text("Point Light Settings");
+            ImGui::DragFloat3("Light Position", glm::value_ptr(LightPos), 0.1f);
+            ImGui::SliderFloat("Constant", &LightConstant, 0.0f, 1.0f);
+            ImGui::SliderFloat("Linear", &LightLinear, 0.0f, 1.0f);
+            ImGui::SliderFloat("Quadratic", &LightQuadratic, 0.0f, 1.0f);
+        }
+        else if (LightType == 2)
+        {
+            // Spotlight-only controls
+            ImGui::Text("Flashlight Settings");
+            ImGui::DragFloat3("Light Position", glm::value_ptr(LightPos), 0.1f);
+            ImGui::DragFloat3("Light Direction", glm::value_ptr(LightDirection), 0.05f);
+			ImGui::SliderFloat("Cutoff Angle", &CutOff, 0.0f, 1.0f);
+			ImGui::SliderFloat("Outer Cutoff Angle", &OuterCutOff, 0.0f, 1.0f);
+            ImGui::SliderFloat("Constant", &LightConstant, 0.0f, 1.0f);
+            ImGui::SliderFloat("Linear", &LightLinear, 0.0f, 1.0f);
+            ImGui::SliderFloat("Quadratic", &LightQuadratic, 0.0f, 1.0f);
+            // once you implement cutoff angles in the shader, add sliders for those here too
+        }
+
         ImGui::End();
 
         // Render ImGui
