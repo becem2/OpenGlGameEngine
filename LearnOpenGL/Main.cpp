@@ -31,8 +31,6 @@ Camera* ourCamera = nullptr;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-
-
 // cursor capture state
 enum class CursorMode { Captured, Free };
 CursorMode cursorMode = CursorMode::Free;
@@ -52,7 +50,6 @@ int main()
 
     // glfw window creation
     // --------------------
-
     GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(primaryMonitor);
     GLFWwindow* window = glfwCreateWindow(mode->width, mode->height, "LearnOpenGL", primaryMonitor, NULL);
@@ -87,7 +84,6 @@ int main()
     glEnable(GL_DEPTH_TEST);
 
     // tell stb_image to flip loaded textures on the y-axis so they match OpenGL's UV convention
-    // --------------------------------------------------------------------------------------
     stbi_set_flip_vertically_on_load(true);
 
     // build and compile our shader program
@@ -98,87 +94,83 @@ int main()
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
-        // positions          // normals
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        // positions          // normals           // texture coords
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
 
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
     };
 
     glm::vec3 cubePositions[] = {
-        glm::vec3(0.0f,  0.0f,  0.0f),
+        glm::vec3(0.0f,  0.0f,   0.0f),
         glm::vec3(2.0f,  5.0f, -15.0f),
-        glm::vec3(-1.5f, -2.2f, -2.5f),
+        glm::vec3(-1.5f, -2.2f,  -2.5f),
         glm::vec3(-3.8f, -2.0f, -12.3f),
-        glm::vec3(2.4f, -0.4f, -3.5f),
-        glm::vec3(-1.7f,  3.0f, -7.5f),
-        glm::vec3(1.3f, -2.0f, -2.5f),
-        glm::vec3(1.5f,  2.0f, -2.5f),
-        glm::vec3(1.5f,  0.2f, -1.5f),
-        glm::vec3(-1.3f,  1.0f, -1.5f)
+        glm::vec3(2.4f, -0.4f,  -3.5f),
+        glm::vec3(-1.7f,  3.0f,  -7.5f),
+        glm::vec3(1.3f, -2.0f,  -2.5f),
+        glm::vec3(1.5f,  2.0f,  -2.5f),
+        glm::vec3(1.5f,  0.2f,  -1.5f),
+        glm::vec3(-1.3f,  1.0f,  -1.5f)
     };
 
-
-
     // Variables
-    glm::vec3 LightColor = glm::vec3(1, 1, 1);
+    // ---------
+    glm::vec3 LightColor = glm::vec3(1.0f, 1.0f, 1.0f);
     glm::vec3 LightPos = glm::vec3(1.2f, 1.0f, 2.0f);
-	glm::vec3 LightDirection = glm::vec3(-0.2f, -1.0f, -0.3f);
-    glm::vec3 MaterialColor = glm::vec3(153.0f/256, 53.0f/256, 53.0f/256);
-    float AmbientStrength = 0.2f; 
-	float SpecularStrength = 5.0f; 
-    int Shininess = 32; 
-	bool isAmbientOn = true;
-	bool isDiffuseOn = true;
-	bool isSpecularOn = true;
-	int LightType = 0; // 0 = Directional, 1 = Point, 2 = Flash
-	float LightConstant = 1.0f;
-	float LightLinear = 0.09f;
-	float LightQuadratic = 0.032f;
-	float CutOff = glm::cos(glm::radians(12.5f));
-	float OuterCutOff = glm::cos(glm::radians(17.5f));
+    glm::vec3 LightDirection = glm::vec3(-0.2f, -1.0f, -0.3f);
+    glm::vec3 MaterialColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    float AmbientStrength = 0.2f;
+    float SpecularStrength = 5.0f;
+    int Shininess = 32;
+    bool isAmbientOn = true;
+    bool isDiffuseOn = true;
+    bool isSpecularOn = true;
+    int LightType = 0; // 0 = Directional, 1 = Point, 2 = Flash
+    float LightConstant = 1.0f;
+    float LightLinear = 0.09f;
+    float LightQuadratic = 0.032f;
+    float CutOff = glm::cos(glm::radians(12.5f));       // stored as cosine
+    float OuterCutOff = glm::cos(glm::radians(17.5f));  // stored as cosine
 
-
-
-
-    // ----------------  VBO , VAO , EBO configuration
+    // ----------------  VBO , VAO configuration
     // Cube VBO and VAO
     unsigned int VBO, cubeVAO;
     glGenVertexArrays(1, &cubeVAO);
@@ -187,42 +179,30 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-
-
     glBindVertexArray(cubeVAO);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
-
-
-
-    // Light VBO and VAO
+    // Light VAO
     unsigned int lightCubeVAO;
     glGenVertexArrays(1, &lightCubeVAO);
     glBindVertexArray(lightCubeVAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // note that we update the lamp's position attribute's stride to reflect the updated buffer data
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // load textures (we now use a utility function to keep the code more organized)
-    // -----------------------------------------------------------------------------
-    //unsigned int diffuseMap = loadTexture("Resources/container2.png");
-    //unsigned int specularMap = loadTexture("Resources/container2_specular.png");
+    // load textures
+    // -------------
+    unsigned int diffuseMap = loadTexture("Resources/container2.png");
+    unsigned int specularMap = loadTexture("Resources/container2_specular.png");
 
-    // shader configuration
-    // --------------------
-    objectShader.use();
-    //objectShader.setInt("material.diffuse", 0);
-    //objectShader.setInt("material.specular", 1);
-
-
-
-    // Dear imgui initialization
-
+    // Dear ImGui initialization
+    // -------------------------
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -234,27 +214,20 @@ int main()
     // -----------
     while (!glfwWindowShouldClose(window))
     {
-        // ImGui Initialization
+        // ImGui frame start
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // Variables that change every frame
-        glm::vec3 LightAmbient = LightColor * AmbientStrength; // scalar * vec3 scales all channels evenly
-
-
         // per-frame time logic
-        // --------------------
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
         // input
-        // -----
         processInput(window);
 
         // render
-        // ------
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -262,50 +235,51 @@ int main()
         objectShader.use();
         objectShader.setVec3("viewPos", ourCamera->getPosition());
 
+        // flashlight follows the camera; other light types use the GUI values
+        glm::vec3 shaderLightPos = LightPos;
+        glm::vec3 shaderLightDir = LightDirection;
+        if (LightType == 2)
+        {
+            shaderLightPos = ourCamera->getPosition();
+            shaderLightDir = ourCamera->getFront();
+        }
+
         // light properties
-        objectShader.setVec3("light.ambient", LightAmbient);
-        objectShader.setVec3("light.color", LightColor);
-        objectShader.setVec3("light.position", LightPos);
-        objectShader.setVec3("light.direction", LightDirection);
-		objectShader.setFloat("light.constant", LightConstant);
-		objectShader.setFloat("light.linear", LightLinear);
-		objectShader.setFloat("light.quadratic", LightQuadratic);
-		objectShader.setFloat("light.cutoff", CutOff);
+        objectShader.setVec3("light.ambient", LightColor * AmbientStrength);
+        objectShader.setVec3("light.diffuse", LightColor);
+        objectShader.setVec3("light.specular", LightColor * SpecularStrength);
+        objectShader.setVec3("light.position", shaderLightPos);
+        objectShader.setVec3("light.direction", shaderLightDir);
+        objectShader.setFloat("light.cutoff", CutOff);
         objectShader.setFloat("light.outerCutoff", OuterCutOff);
-        
+        objectShader.setFloat("light.constant", LightConstant);
+        objectShader.setFloat("light.linear", LightLinear);
+        objectShader.setFloat("light.quadratic", LightQuadratic);
+
+        // texture units
+        objectShader.setInt("material.diffuse", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, diffuseMap);
+
+        objectShader.setInt("material.specular", 1);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, specularMap);
+
         // material properties
-        objectShader.setVec3("material.ambient", MaterialColor);
+        objectShader.setFloat("material.shininess", (float)Shininess);
         objectShader.setVec3("material.color", MaterialColor);
-        objectShader.setFloat("material.specularStrength", SpecularStrength);
-        objectShader.setInt("material.shininess", Shininess);
 
-
-
-        // Light Activation / Type
-		objectShader.setBool("lightActivation.ambient", isAmbientOn);
-		objectShader.setBool("lightActivation.diffuse", isDiffuseOn);
-		objectShader.setBool("lightActivation.specular", isSpecularOn);
-		objectShader.setInt("lightType", LightType);
-
-
-		// viewPosition properties
-        objectShader.setVec3("viewPos", ourCamera->getPosition());
-
-
-        // lightCube propertiies
-
+        // light activation / type
+        objectShader.setBool("lightActivation.ambient", isAmbientOn);
+        objectShader.setBool("lightActivation.diffuse", isDiffuseOn);
+        objectShader.setBool("lightActivation.specular", isSpecularOn);
+        objectShader.setInt("lightType", LightType);
 
         // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(ourCamera->getFov()), (float)mode->width / (float)mode->height, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(ourCamera->getFov()),
+            (float)mode->width / (float)mode->height, 0.1f, 100.0f);
         ourCamera->Use(objectShader);
         objectShader.setMat4("projection", projection);
-
-        // bind diffuse map
-        //glActiveTexture(GL_TEXTURE0);
-        //glBindTexture(GL_TEXTURE_2D, diffuseMap);
-        // bind specular map
-        //glActiveTexture(GL_TEXTURE1);
-        //glBindTexture(GL_TEXTURE_2D, specularMap);
 
         // render the cubes
         glBindVertexArray(cubeVAO);
@@ -321,18 +295,21 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
-        // also draw the lamp object
-        lightingShader.use();
-        lightingShader.setVec3("LightColor", LightColor);
-        lightingShader.setMat4("projection", projection);
-        ourCamera->Use(lightingShader);
-        glm::mat4 lampModel = glm::mat4(1.0f);
-        lampModel = glm::translate(lampModel, LightPos);
-        lampModel = glm::scale(lampModel, glm::vec3(0.2f)); // a smaller cube
-        lightingShader.setMat4("model", lampModel);
+        // also draw the lamp object (hidden in flashlight mode, since the light is the camera)
+        if (LightType != 2)
+        {
+            lightingShader.use();
+            lightingShader.setVec3("LightColor", LightColor);
+            lightingShader.setMat4("projection", projection);
+            ourCamera->Use(lightingShader);
+            glm::mat4 lampModel = glm::mat4(1.0f);
+            lampModel = glm::translate(lampModel, LightPos);
+            lampModel = glm::scale(lampModel, glm::vec3(0.2f)); // a smaller cube
+            lightingShader.setMat4("model", lampModel);
 
-        glBindVertexArray(lightCubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+            glBindVertexArray(lightCubeVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         // ImGui Code
         ImGui::SetNextWindowPos(ImVec2(5, 5));
@@ -342,12 +319,12 @@ int main()
         ImGui::SliderFloat("Ambient Strength", &AmbientStrength, 0.1f, 1.0f);
         ImGui::SliderFloat("Specular Strength", &SpecularStrength, 0.1f, 10.0f);
         ImGui::Text("Shininess : ");
-        ImGui::RadioButton("2", &Shininess, 2);   ImGui::SameLine();
-        ImGui::RadioButton("4", &Shininess, 4);   ImGui::SameLine();
-        ImGui::RadioButton("8", &Shininess, 8);   ImGui::SameLine();
+        ImGui::RadioButton("2", &Shininess, 2);     ImGui::SameLine();
+        ImGui::RadioButton("4", &Shininess, 4);     ImGui::SameLine();
+        ImGui::RadioButton("8", &Shininess, 8);     ImGui::SameLine();
         ImGui::RadioButton("16", &Shininess, 16);
-        ImGui::RadioButton("32", &Shininess, 32);  ImGui::SameLine();
-        ImGui::RadioButton("64", &Shininess, 64);  ImGui::SameLine();
+        ImGui::RadioButton("32", &Shininess, 32);   ImGui::SameLine();
+        ImGui::RadioButton("64", &Shininess, 64);   ImGui::SameLine();
         ImGui::RadioButton("128", &Shininess, 128); ImGui::SameLine();
         ImGui::RadioButton("256", &Shininess, 256);
         ImGui::Checkbox("Ambient", &isAmbientOn);
@@ -379,16 +356,13 @@ int main()
         }
         else if (LightType == 2)
         {
-            // Spotlight-only controls
+            // Flashlight: position and direction come from the camera
             ImGui::Text("Flashlight Settings");
-            ImGui::DragFloat3("Light Position", glm::value_ptr(LightPos), 0.1f);
-            ImGui::DragFloat3("Light Direction", glm::value_ptr(LightDirection), 0.05f);
-			ImGui::SliderFloat("Cutoff Angle", &CutOff, 0.0f, 1.0f);
-			ImGui::SliderFloat("Outer Cutoff Angle", &OuterCutOff, 0.0f, 1.0f);
+            ImGui::SliderFloat("Cutoff Angle", &CutOff, 0.0f, 1.0f);
+            ImGui::SliderFloat("Outer Cutoff Angle", &OuterCutOff, 0.0f, 1.0f);
             ImGui::SliderFloat("Constant", &LightConstant, 0.0f, 1.0f);
             ImGui::SliderFloat("Linear", &LightLinear, 0.0f, 1.0f);
             ImGui::SliderFloat("Quadratic", &LightQuadratic, 0.0f, 1.0f);
-            // once you implement cutoff angles in the shader, add sliders for those here too
         }
 
         ImGui::End();
@@ -397,14 +371,12 @@ int main()
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        // -------------------------------------------------------------------------------
+        // glfw: swap buffers and poll IO events
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    // optional: de-allocate all resources once they've outlived their purpose:
-    // ------------------------------------------------------------------------
+    // de-allocate all resources once they've outlived their purpose
     glDeleteVertexArrays(1, &cubeVAO);
     glDeleteVertexArrays(1, &lightCubeVAO);
     glDeleteBuffers(1, &VBO);
@@ -418,7 +390,6 @@ int main()
     ourCamera = nullptr;
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
-    // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
 }
