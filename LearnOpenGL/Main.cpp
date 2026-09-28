@@ -10,6 +10,7 @@
 #include <imgui/imgui_impl_opengl3.h>
 
 #include <iostream>
+#include <string>
 
 #include "stb_image.h"
 #include "Shader.h"
@@ -88,7 +89,7 @@ int main()
 
     // build and compile our shader program
     // ------------------------------------
-    Shader objectShader("Ambient.vs", "Ambient.fs");
+    Shader objectShader("MultipleLights.vs", "MultipleLights.fs");
     Shader lightingShader("lightingShader.vs", "lightingShader.fs");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
@@ -138,6 +139,7 @@ int main()
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
     };
 
+    // cube positions
     glm::vec3 cubePositions[] = {
         glm::vec3(0.0f,  0.0f,   0.0f),
         glm::vec3(2.0f,  5.0f, -15.0f),
@@ -151,19 +153,27 @@ int main()
         glm::vec3(-1.3f,  1.0f,  -1.5f)
     };
 
+    // point light positions
+    glm::vec3 pointLightPositions[] = {
+        glm::vec3(0.7f,  0.2f,   2.0f),
+        glm::vec3(2.3f, -3.3f,  -4.0f),
+        glm::vec3(-4.0f,  2.0f, -12.0f),
+        glm::vec3(0.0f,  0.0f,  -3.0f)
+    };
+
     // Variables
     // ---------
     glm::vec3 LightColor = glm::vec3(1.0f, 1.0f, 1.0f);
-    glm::vec3 LightPos = glm::vec3(1.2f, 1.0f, 2.0f);
     glm::vec3 LightDirection = glm::vec3(-0.2f, -1.0f, -0.3f);
-    glm::vec3 MaterialColor = glm::vec3(1.0f, 1.0f, 1.0f);
     float AmbientStrength = 0.2f;
     float SpecularStrength = 5.0f;
     int Shininess = 32;
     bool isAmbientOn = true;
     bool isDiffuseOn = true;
     bool isSpecularOn = true;
-    int LightType = 0; // 0 = Directional, 1 = Point, 2 = Flash
+    int LightType = 0; // 0 = Directional, 1 = Point, 2 = Flash (used in Custom scene)
+    int SceneMode = 0; // 0 = Preset scene (dir + 4 points + flashlight), 1 = Custom (pick one light type)
+    bool flashlightOn = true; // flashlight toggle in the Preset scene
     float LightConstant = 1.0f;
     float LightLinear = 0.09f;
     float LightQuadratic = 0.032f;
@@ -235,26 +245,50 @@ int main()
         objectShader.use();
         objectShader.setVec3("viewPos", ourCamera->getPosition());
 
-        // flashlight follows the camera; other light types use the GUI values
-        glm::vec3 shaderLightPos = LightPos;
-        glm::vec3 shaderLightDir = LightDirection;
-        if (LightType == 2)
+        // light colours; the Ambient / Diffuse / Specular checkboxes are applied here
+        glm::vec3 amb = LightColor * AmbientStrength * (isAmbientOn ? 1.0f : 0.0f);
+        glm::vec3 dif = LightColor * (isDiffuseOn ? 1.0f : 0.0f);
+        glm::vec3 spc = LightColor * SpecularStrength * (isSpecularOn ? 1.0f : 0.0f);
+        glm::vec3 off(0.0f);
+
+        bool presetScene = (SceneMode == 0);
+
+        // Preset scene: fixed values for every light, all on together (flashlight is toggleable).
+        // Custom scene: only the selected light type is on, driven by the GUI values.
+        bool dirOn = presetScene || (LightType == 0);
+        bool pointOn = presetScene || (LightType == 1);
+        bool spotOn = presetScene ? flashlightOn : (LightType == 2);
+
+        // directional light
+        objectShader.setVec3("dirLight.direction", presetScene ? glm::vec3(-0.2f, -1.0f, -0.3f) : LightDirection);
+        objectShader.setVec3("dirLight.ambient", presetScene ? glm::vec3(0.05f, 0.05f, 0.05f) : (dirOn ? amb : off));
+        objectShader.setVec3("dirLight.diffuse", presetScene ? glm::vec3(0.4f, 0.4f, 0.4f) : (dirOn ? dif : off));
+        objectShader.setVec3("dirLight.specular", presetScene ? glm::vec3(0.5f, 0.5f, 0.5f) : (dirOn ? spc : off));
+
+        // point lights (all four)
+        for (int i = 0; i < 4; i++)
         {
-            shaderLightPos = ourCamera->getPosition();
-            shaderLightDir = ourCamera->getFront();
+            std::string p = "pointLights[" + std::to_string(i) + "]";
+            objectShader.setVec3(p + ".position", pointLightPositions[i]);
+            objectShader.setFloat(p + ".constant", presetScene ? 1.0f : LightConstant);
+            objectShader.setFloat(p + ".linear", presetScene ? 0.09f : LightLinear);
+            objectShader.setFloat(p + ".quadratic", presetScene ? 0.032f : LightQuadratic);
+            objectShader.setVec3(p + ".ambient", presetScene ? glm::vec3(0.05f, 0.05f, 0.05f) : (pointOn ? amb : off));
+            objectShader.setVec3(p + ".diffuse", presetScene ? glm::vec3(0.8f, 0.8f, 0.8f) : (pointOn ? dif : off));
+            objectShader.setVec3(p + ".specular", presetScene ? glm::vec3(1.0f, 1.0f, 1.0f) : (pointOn ? spc : off));
         }
 
-        // light properties
-        objectShader.setVec3("light.ambient", LightColor * AmbientStrength);
-        objectShader.setVec3("light.diffuse", LightColor);
-        objectShader.setVec3("light.specular", LightColor * SpecularStrength);
-        objectShader.setVec3("light.position", shaderLightPos);
-        objectShader.setVec3("light.direction", shaderLightDir);
-        objectShader.setFloat("light.cutoff", CutOff);
-        objectShader.setFloat("light.outerCutoff", OuterCutOff);
-        objectShader.setFloat("light.constant", LightConstant);
-        objectShader.setFloat("light.linear", LightLinear);
-        objectShader.setFloat("light.quadratic", LightQuadratic);
+        // spotlight = flashlight, follows the camera
+        objectShader.setVec3("spotLight.position", ourCamera->getPosition());
+        objectShader.setVec3("spotLight.direction", ourCamera->getFront());
+        objectShader.setFloat("spotLight.cutOff", presetScene ? glm::cos(glm::radians(12.5f)) : CutOff);
+        objectShader.setFloat("spotLight.outerCutOff", presetScene ? glm::cos(glm::radians(15.0f)) : OuterCutOff);
+        objectShader.setFloat("spotLight.constant", presetScene ? 1.0f : LightConstant);
+        objectShader.setFloat("spotLight.linear", presetScene ? 0.09f : LightLinear);
+        objectShader.setFloat("spotLight.quadratic", presetScene ? 0.032f : LightQuadratic);
+        objectShader.setVec3("spotLight.ambient", (!presetScene && spotOn) ? amb : off); // preset flashlight has no ambient
+        objectShader.setVec3("spotLight.diffuse", spotOn ? (presetScene ? glm::vec3(1.0f) : dif) : off);
+        objectShader.setVec3("spotLight.specular", spotOn ? (presetScene ? glm::vec3(1.0f) : spc) : off);
 
         // texture units
         objectShader.setInt("material.diffuse", 0);
@@ -267,13 +301,6 @@ int main()
 
         // material properties
         objectShader.setFloat("material.shininess", (float)Shininess);
-        objectShader.setVec3("material.color", MaterialColor);
-
-        // light activation / type
-        objectShader.setBool("lightActivation.ambient", isAmbientOn);
-        objectShader.setBool("lightActivation.diffuse", isDiffuseOn);
-        objectShader.setBool("lightActivation.specular", isSpecularOn);
-        objectShader.setInt("lightType", LightType);
 
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(ourCamera->getFov()),
@@ -295,29 +322,34 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
-        // also draw the lamp object (hidden in flashlight mode, since the light is the camera)
-        if (LightType != 2)
+        // draw the lamp cubes, only in Point mode (one per point light)
+        if (pointOn)
         {
             lightingShader.use();
             lightingShader.setVec3("LightColor", LightColor);
             lightingShader.setMat4("projection", projection);
             ourCamera->Use(lightingShader);
-            glm::mat4 lampModel = glm::mat4(1.0f);
-            lampModel = glm::translate(lampModel, LightPos);
-            lampModel = glm::scale(lampModel, glm::vec3(0.2f)); // a smaller cube
-            lightingShader.setMat4("model", lampModel);
 
             glBindVertexArray(lightCubeVAO);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
+            for (int i = 0; i < 4; i++)
+            {
+                glm::mat4 lampModel = glm::translate(glm::mat4(1.0f), pointLightPositions[i]);
+                lampModel = glm::scale(lampModel, glm::vec3(0.2f)); // a smaller cube
+                lightingShader.setMat4("model", lampModel);
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+            }
         }
 
         // ImGui Code
         ImGui::SetNextWindowPos(ImVec2(5, 5));
         ImGui::Begin("Control Menu", nullptr, ImGuiWindowFlags_NoMove);
-        ImGui::ColorEdit3("Light Color", glm::value_ptr(LightColor));
-        ImGui::ColorEdit3("Material Color", glm::value_ptr(MaterialColor));
-        ImGui::SliderFloat("Ambient Strength", &AmbientStrength, 0.1f, 1.0f);
-        ImGui::SliderFloat("Specular Strength", &SpecularStrength, 0.1f, 10.0f);
+        ImGui::Text("Scene : ");
+        ImGui::RadioButton("Preset lights", &SceneMode, 0);
+        ImGui::SameLine();
+        ImGui::RadioButton("Custom", &SceneMode, 1);
+        ImGui::Separator();
+
+        // shininess is a material property, shared by both scenes
         ImGui::Text("Shininess : ");
         ImGui::RadioButton("2", &Shininess, 2);     ImGui::SameLine();
         ImGui::RadioButton("4", &Shininess, 4);     ImGui::SameLine();
@@ -327,42 +359,56 @@ int main()
         ImGui::RadioButton("64", &Shininess, 64);   ImGui::SameLine();
         ImGui::RadioButton("128", &Shininess, 128); ImGui::SameLine();
         ImGui::RadioButton("256", &Shininess, 256);
-        ImGui::Checkbox("Ambient", &isAmbientOn);
-        ImGui::Checkbox("Diffuse", &isDiffuseOn);
-        ImGui::Checkbox("Specular", &isSpecularOn);
-
-        ImGui::Separator();
-        ImGui::RadioButton("Directional", &LightType, 0);
-        ImGui::SameLine();
-        ImGui::RadioButton("Point", &LightType, 1);
-        ImGui::SameLine();
-        ImGui::RadioButton("Flash", &LightType, 2);
         ImGui::Separator();
 
-        if (LightType == 0)
+        if (SceneMode == 0)
         {
-            // Directional-only controls
-            ImGui::Text("Directional Light Settings");
-            ImGui::DragFloat3("Light Direction", glm::value_ptr(LightDirection), 0.05f);
+            // Preset scene: directional + 4 point lights + flashlight
+            ImGui::Text("Preset Scene");
+            ImGui::Checkbox("Flashlight", &flashlightOn);
         }
-        else if (LightType == 1)
+        else
         {
-            // Point-only controls
-            ImGui::Text("Point Light Settings");
-            ImGui::DragFloat3("Light Position", glm::value_ptr(LightPos), 0.1f);
-            ImGui::SliderFloat("Constant", &LightConstant, 0.0f, 1.0f);
-            ImGui::SliderFloat("Linear", &LightLinear, 0.0f, 1.0f);
-            ImGui::SliderFloat("Quadratic", &LightQuadratic, 0.0f, 1.0f);
-        }
-        else if (LightType == 2)
-        {
-            // Flashlight: position and direction come from the camera
-            ImGui::Text("Flashlight Settings");
-            ImGui::SliderFloat("Cutoff Angle", &CutOff, 0.0f, 1.0f);
-            ImGui::SliderFloat("Outer Cutoff Angle", &OuterCutOff, 0.0f, 1.0f);
-            ImGui::SliderFloat("Constant", &LightConstant, 0.0f, 1.0f);
-            ImGui::SliderFloat("Linear", &LightLinear, 0.0f, 1.0f);
-            ImGui::SliderFloat("Quadratic", &LightQuadratic, 0.0f, 1.0f);
+            // Custom scene: pick one light type and tweak it
+            ImGui::ColorEdit3("Light Color", glm::value_ptr(LightColor));
+            ImGui::SliderFloat("Ambient Strength", &AmbientStrength, 0.1f, 1.0f);
+            ImGui::SliderFloat("Specular Strength", &SpecularStrength, 0.1f, 10.0f);
+            ImGui::Checkbox("Ambient", &isAmbientOn);
+            ImGui::Checkbox("Diffuse", &isDiffuseOn);
+            ImGui::Checkbox("Specular", &isSpecularOn);
+
+            ImGui::Separator();
+            ImGui::RadioButton("Directional", &LightType, 0);
+            ImGui::SameLine();
+            ImGui::RadioButton("Point", &LightType, 1);
+            ImGui::SameLine();
+            ImGui::RadioButton("Flash", &LightType, 2);
+            ImGui::Separator();
+
+            if (LightType == 0)
+            {
+                // Directional-only controls
+                ImGui::Text("Directional Light Settings");
+                ImGui::DragFloat3("Light Direction", glm::value_ptr(LightDirection), 0.05f);
+            }
+            else if (LightType == 1)
+            {
+                // Point-only controls (positions are fixed in pointLightPositions)
+                ImGui::Text("Point Light Settings");
+                ImGui::SliderFloat("Constant", &LightConstant, 0.0f, 1.0f);
+                ImGui::SliderFloat("Linear", &LightLinear, 0.0f, 1.0f);
+                ImGui::SliderFloat("Quadratic", &LightQuadratic, 0.0f, 1.0f);
+            }
+            else if (LightType == 2)
+            {
+                // Flashlight: position and direction come from the camera
+                ImGui::Text("Flashlight Settings");
+                ImGui::SliderFloat("Cutoff Angle", &CutOff, 0.0f, 1.0f);
+                ImGui::SliderFloat("Outer Cutoff Angle", &OuterCutOff, 0.0f, 1.0f);
+                ImGui::SliderFloat("Constant", &LightConstant, 0.0f, 1.0f);
+                ImGui::SliderFloat("Linear", &LightLinear, 0.0f, 1.0f);
+                ImGui::SliderFloat("Quadratic", &LightQuadratic, 0.0f, 1.0f);
+            }
         }
 
         ImGui::End();

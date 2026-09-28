@@ -79,6 +79,9 @@
     <None Include="Ambient.fs">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="MultipleLights.vs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
@@ -101,5 +104,10 @@
     <ResourceCompile Include="LearnOpenGL.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="MultipleLights.fs">
+      <Filter>Resource Files</Filter>
+    </Text>
   </ItemGroup>
 </Project>
