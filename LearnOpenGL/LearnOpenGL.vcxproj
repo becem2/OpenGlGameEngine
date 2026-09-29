@@ -170,6 +170,8 @@
     <None Include="LearnOpenGL.vcxproj.fixed2" />
     <None Include="lightingShader.fs" />
     <None Include="lightingShader.vs" />
+    <None Include="Model.fs" />
+    <None Include="Model.vs" />
     <None Include="MultipleLights.vs" />
     <None Include="objectShader.fs" />
     <None Include="objectShader.vs" />

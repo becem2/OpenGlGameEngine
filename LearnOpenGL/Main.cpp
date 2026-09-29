@@ -15,6 +15,7 @@
 #include "stb_image.h"
 #include "Shader.h"
 #include "Camera.h"
+#include "Model.h"
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -80,17 +81,27 @@ int main()
         return -1;
     }
 
+    // Model loading
+    // NOTE: update this path to point at your actual model file.
+    // Loaded here (before stbi_set_flip_vertically_on_load below), so its
+    // textures load un-flipped, matching Assimp's aiProcess_FlipUVs — flipping
+    // both would cancel out and leave the model's UVs wrong again.
+    Model ourModel("Resources/backpack/backpack.obj");
+
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
 
     // tell stb_image to flip loaded textures on the y-axis so they match OpenGL's UV convention
+    // (only affects textures loaded after this point, i.e. the cube's textures below)
     stbi_set_flip_vertically_on_load(true);
 
     // build and compile our shader program
     // ------------------------------------
     Shader objectShader("MultipleLights.vs", "MultipleLights.fs");
     Shader lightingShader("lightingShader.vs", "lightingShader.fs");
+    Shader modelShader("Model.vs", "Model.fs");
+
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -180,6 +191,10 @@ int main()
     float CutOff = glm::cos(glm::radians(12.5f));       // stored as cosine
     float OuterCutOff = glm::cos(glm::radians(17.5f));  // stored as cosine
 
+    // model transform (position/scale on screen)
+    glm::vec3 modelPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+    float modelScale = 1.0f;
+
     // ----------------  VBO , VAO configuration
     // Cube VBO and VAO
     unsigned int VBO, cubeVAO;
@@ -241,9 +256,9 @@ int main()
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // be sure to activate shader when setting uniforms/drawing objects
-        objectShader.use();
-        objectShader.setVec3("viewPos", ourCamera->getPosition());
+        // shared view/projection transforms, used by every shader this frame
+        glm::mat4 projection = glm::perspective(glm::radians(ourCamera->getFov()),
+            (float)mode->width / (float)mode->height, 0.1f, 100.0f);
 
         // light colours; the Ambient / Diffuse / Specular checkboxes are applied here
         glm::vec3 amb = LightColor * AmbientStrength * (isAmbientOn ? 1.0f : 0.0f);
@@ -258,6 +273,12 @@ int main()
         bool dirOn = presetScene || (LightType == 0);
         bool pointOn = presetScene || (LightType == 1);
         bool spotOn = presetScene ? flashlightOn : (LightType == 2);
+
+        // ---------------------------------------------------------
+        // objectShader: the row of textured cubes
+        // ---------------------------------------------------------
+        objectShader.use();
+        objectShader.setVec3("viewPos", ourCamera->getPosition());
 
         // directional light
         objectShader.setVec3("dirLight.direction", presetScene ? glm::vec3(-0.2f, -1.0f, -0.3f) : LightDirection);
@@ -303,8 +324,6 @@ int main()
         objectShader.setFloat("material.shininess", (float)Shininess);
 
         // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(ourCamera->getFov()),
-            (float)mode->width / (float)mode->height, 0.1f, 100.0f);
         ourCamera->Use(objectShader);
         objectShader.setMat4("projection", projection);
 
@@ -312,13 +331,13 @@ int main()
         glBindVertexArray(cubeVAO);
         for (int i = 0; i < 10; i++)
         {
-            glm::mat4 model = glm::mat4(1.0f);
+            glm::mat4 cubeModel = glm::mat4(1.0f);
             float angle = 2.0f * i;
 
-            model = glm::translate(model, cubePositions[i]);
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            cubeModel = glm::translate(cubeModel, cubePositions[i]);
+            cubeModel = glm::rotate(cubeModel, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 
-            objectShader.setMat4("model", model);
+            objectShader.setMat4("model", cubeModel);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
@@ -340,6 +359,56 @@ int main()
             }
         }
 
+        // ---------------------------------------------------------
+        // modelShader: the loaded Model
+        // ---------------------------------------------------------
+        modelShader.use();
+        modelShader.setVec3("viewPos", ourCamera->getPosition());
+
+        modelShader.setVec3("dirLight.direction", presetScene ? glm::vec3(-0.2f, -1.0f, -0.3f) : LightDirection);
+        modelShader.setVec3("dirLight.ambient", presetScene ? glm::vec3(0.05f, 0.05f, 0.05f) : (dirOn ? amb : off));
+        modelShader.setVec3("dirLight.diffuse", presetScene ? glm::vec3(0.4f, 0.4f, 0.4f) : (dirOn ? dif : off));
+        modelShader.setVec3("dirLight.specular", presetScene ? glm::vec3(0.5f, 0.5f, 0.5f) : (dirOn ? spc : off));
+
+        for (int i = 0; i < 4; i++)
+        {
+            std::string p = "pointLights[" + std::to_string(i) + "]";
+            modelShader.setVec3(p + ".position", pointLightPositions[i]);
+            modelShader.setFloat(p + ".constant", presetScene ? 1.0f : LightConstant);
+            modelShader.setFloat(p + ".linear", presetScene ? 0.09f : LightLinear);
+            modelShader.setFloat(p + ".quadratic", presetScene ? 0.032f : LightQuadratic);
+            modelShader.setVec3(p + ".ambient", presetScene ? glm::vec3(0.05f, 0.05f, 0.05f) : (pointOn ? amb : off));
+            modelShader.setVec3(p + ".diffuse", presetScene ? glm::vec3(0.8f, 0.8f, 0.8f) : (pointOn ? dif : off));
+            modelShader.setVec3(p + ".specular", presetScene ? glm::vec3(1.0f, 1.0f, 1.0f) : (pointOn ? spc : off));
+        }
+
+        // spotlight = flashlight, follows the camera
+        modelShader.setVec3("spotLight.position", ourCamera->getPosition());
+        modelShader.setVec3("spotLight.direction", ourCamera->getFront());
+        modelShader.setFloat("spotLight.cutOff", presetScene ? glm::cos(glm::radians(12.5f)) : CutOff);
+        modelShader.setFloat("spotLight.outerCutOff", presetScene ? glm::cos(glm::radians(15.0f)) : OuterCutOff);
+        modelShader.setFloat("spotLight.constant", presetScene ? 1.0f : LightConstant);
+        modelShader.setFloat("spotLight.linear", presetScene ? 0.09f : LightLinear);
+        modelShader.setFloat("spotLight.quadratic", presetScene ? 0.032f : LightQuadratic);
+        modelShader.setVec3("spotLight.ambient", (!presetScene && spotOn) ? amb : off); // preset flashlight has no ambient
+        modelShader.setVec3("spotLight.diffuse", spotOn ? (presetScene ? glm::vec3(1.0f) : dif) : off);
+        modelShader.setVec3("spotLight.specular", spotOn ? (presetScene ? glm::vec3(1.0f) : spc) : off);
+
+        // material property (Model.fs uses a plain "shininess" uniform, not material.shininess)
+        modelShader.setFloat("shininess", (float)Shininess);
+
+        // view/projection transformations
+        ourCamera->Use(modelShader);
+        modelShader.setMat4("projection", projection);
+
+        // place, scale, and draw the model
+        glm::mat4 modelMat = glm::mat4(1.0f);
+        modelMat = glm::translate(modelMat, modelPosition);
+        modelMat = glm::scale(modelMat, glm::vec3(modelScale));
+        modelShader.setMat4("model", modelMat);
+
+        ourModel.Draw(modelShader);
+
         // ImGui Code
         ImGui::SetNextWindowPos(ImVec2(5, 5));
         ImGui::Begin("Control Menu", nullptr, ImGuiWindowFlags_NoMove);
@@ -359,6 +428,11 @@ int main()
         ImGui::RadioButton("64", &Shininess, 64);   ImGui::SameLine();
         ImGui::RadioButton("128", &Shininess, 128); ImGui::SameLine();
         ImGui::RadioButton("256", &Shininess, 256);
+        ImGui::Separator();
+
+        ImGui::Text("Model : ");
+        ImGui::DragFloat3("Model Position", glm::value_ptr(modelPosition), 0.05f);
+        ImGui::DragFloat("Model Scale", &modelScale, 0.01f, 0.01f, 10.0f);
         ImGui::Separator();
 
         if (SceneMode == 0)

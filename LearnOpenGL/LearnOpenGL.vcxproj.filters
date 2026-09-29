@@ -82,6 +82,12 @@
     <None Include="MultipleLights.vs">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Model.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Model.fs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
