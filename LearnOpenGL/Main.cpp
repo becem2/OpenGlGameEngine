@@ -82,11 +82,20 @@ int main()
     }
 
     // Model loading
-    // NOTE: update this path to point at your actual model file.
-    // Loaded here (before stbi_set_flip_vertically_on_load below), so its
+    // Loaded here (before stbi_set_flip_vertically_on_load below), so their
     // textures load un-flipped, matching Assimp's aiProcess_FlipUVs — flipping
-    // both would cancel out and leave the model's UVs wrong again.
-    Model ourModel("Resources/backpack/backpack.obj");
+    // both would cancel out and leave the models' UVs wrong again.
+
+    // load models
+    Model Terrain("Resources/mesh_final.obj");
+    Model Backpack("Resources/Backpack/backpack.obj");
+    Model Ball("Resources/Pallone/Ball.obj");
+
+    // vector to store models
+    vector<Model> models;
+    models.push_back(Terrain);
+    models.push_back(Backpack);
+    models.push_back(Ball);
 
     // configure global opengl state
     // -----------------------------
@@ -191,9 +200,13 @@ int main()
     float CutOff = glm::cos(glm::radians(12.5f));       // stored as cosine
     float OuterCutOff = glm::cos(glm::radians(17.5f));  // stored as cosine
 
-    // model transform (position/scale on screen)
-    glm::vec3 modelPosition = glm::vec3(0.0f, 0.0f, 0.0f);
-    float modelScale = 1.0f;
+    // per-model transform (position/scale on screen)
+    glm::vec3 TerrainPosition = glm::vec3(-2.55f, -0.85f, 0.0f);
+    glm::vec3 BackpackPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 BallPosition = glm::vec3(2.0f, 0.0f, 0.0f);
+    float TerrainScale = 0.5f;
+    float BackpackScale = 0.5f;
+    float BallScale = 1.0f;
 
     // ----------------  VBO , VAO configuration
     // Cube VBO and VAO
@@ -360,7 +373,7 @@ int main()
         }
 
         // ---------------------------------------------------------
-        // modelShader: the loaded Model
+        // modelShader: the loaded Models
         // ---------------------------------------------------------
         modelShader.use();
         modelShader.setVec3("viewPos", ourCamera->getPosition());
@@ -401,13 +414,21 @@ int main()
         ourCamera->Use(modelShader);
         modelShader.setMat4("projection", projection);
 
-        // place, scale, and draw the model
-        glm::mat4 modelMat = glm::mat4(1.0f);
-        modelMat = glm::translate(modelMat, modelPosition);
-        modelMat = glm::scale(modelMat, glm::vec3(modelScale));
-        modelShader.setMat4("model", modelMat);
+        // place, scale, and draw each model with ITS OWN transform.
+        // models[0] = Terrain, models[1] = Backpack, models[2] = Ball — this order
+        // must match the push_back order above.
+        glm::vec3 modelPositions[3] = { TerrainPosition, BackpackPosition, BallPosition };
+        float     modelScales[3] = { TerrainScale,    BackpackScale,    BallScale };
 
-        ourModel.Draw(modelShader);
+        for (unsigned int i = 0; i < models.size(); i++)
+        {
+            glm::mat4 modelMat = glm::mat4(1.0f);
+            modelMat = glm::translate(modelMat, modelPositions[i]);
+            modelMat = glm::scale(modelMat, glm::vec3(modelScales[i]));
+            modelShader.setMat4("model", modelMat);
+
+            models[i].Draw(modelShader);
+        }
 
         // ImGui Code
         ImGui::SetNextWindowPos(ImVec2(5, 5));
@@ -430,9 +451,23 @@ int main()
         ImGui::RadioButton("256", &Shininess, 256);
         ImGui::Separator();
 
-        ImGui::Text("Model : ");
-        ImGui::DragFloat3("Model Position", glm::value_ptr(modelPosition), 0.05f);
-        ImGui::DragFloat("Model Scale", &modelScale, 0.01f, 0.01f, 10.0f);
+        ImGui::Text("Terrain : ");
+        ImGui::PushID("Terrain");
+        ImGui::DragFloat3("Position", glm::value_ptr(TerrainPosition), 0.05f);
+        ImGui::DragFloat("Scale", &TerrainScale, 0.01f, 0.01f, 10.0f);
+        ImGui::PopID();
+
+        ImGui::Text("Backpack : ");
+        ImGui::PushID("Backpack");
+        ImGui::DragFloat3("Position", glm::value_ptr(BackpackPosition), 0.05f);
+        ImGui::DragFloat("Scale", &BackpackScale, 0.01f, 0.01f, 10.0f);
+        ImGui::PopID();
+
+        ImGui::Text("Ball : ");
+        ImGui::PushID("Ball");
+        ImGui::DragFloat3("Position", glm::value_ptr(BallPosition), 0.05f);
+        ImGui::DragFloat("Scale", &BallScale, 0.01f, 0.01f, 10.0f);
+        ImGui::PopID();
         ImGui::Separator();
 
         if (SceneMode == 0)
