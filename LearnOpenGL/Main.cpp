@@ -16,6 +16,7 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "Model.h"
+#include "PathResolver.h"
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -87,9 +88,9 @@ int main()
     // both would cancel out and leave the models' UVs wrong again.
 
     // load models
-    Model Terrain("Resources/mesh_final.obj");
-    Model Backpack("Resources/Backpack/backpack.obj");
-    Model Ball("Resources/Pallone/Ball.obj");
+    Model Terrain(PathResolver::ResolveAssetPath("Resources/mesh_final.obj"));
+    Model Backpack(PathResolver::ResolveAssetPath("Resources/Backpack/backpack.obj"));
+    Model Ball(PathResolver::ResolveAssetPath("Resources/Pallone/Ball.obj"));
 
     // vector to store models
     vector<Model> models;
@@ -236,8 +237,8 @@ int main()
 
     // load textures
     // -------------
-    unsigned int diffuseMap = loadTexture("Resources/container2.png");
-    unsigned int specularMap = loadTexture("Resources/container2_specular.png");
+    unsigned int diffuseMap = loadTexture(PathResolver::ResolveAssetPath("Resources/container2.png").c_str());
+    unsigned int specularMap = loadTexture(PathResolver::ResolveAssetPath("Resources/container2_specular.png").c_str());
 
     // Dear ImGui initialization
     // -------------------------
